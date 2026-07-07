@@ -4,79 +4,118 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SENA - Smart Economy Navigation Assistant</title>
-    <!-- Tailwind CDN untuk Header & Footer -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div class="container">
+<body class="bg-slate-50 font-sans antialiased text-slate-800 flex flex-col min-h-screen">
+
+    <div class="max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 pb-16 flex-grow">
+        
         <!-- HEADER -->
-         <header class="relative mb-8 text-center bg-blue-400/40 backdrop-blur-md p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <span class="absolute top-3 left-4 sm:top-5 sm:left-6 text-3xl sm:text-4xl select-none">💰</span>
+        <header class="relative mb-8 text-center bg-blue-400/40 backdrop-blur-md p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <span class="absolute top-3 left-4 sm:top-5 sm:left-6 text-3xl sm:text-4xl select-none">💰</span>
             <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight flex flex-col items-center justify-center gap-1 w-full px-2">
-                <span class="bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent leading-tight font-bold">
-                    SENA
-                </span>
-                <span class="bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent text-sm sm:text-base md:text-lg font-semibold leading-tight break-words text-center w-full">
-                    Smart Economy Navigation Assistant
-                </span>
+                <span class="bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent leading-tight font-bold">SENA</span>
+                <span class="bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 bg-clip-text text-transparent text-sm sm:text-base md:text-lg font-semibold leading-tight break-words text-center w-full">Smart Economy Navigation Assistant</span>
             </h1>
             <p class="text-slate-500 text-[10px] sm:text-xs font-medium mt-3 tracking-wide uppercase text-center">Asisten Keuangan Cerdas</p>
         </header>
 
-        <!-- DASHBOARD -->
-        <div class="dashboard">
-            <div class="card">
-                <h3>Total Pemasukan</h3>
-                <span>📈</span>
-                <p id="total-income">Rp 0</p>
+        <!-- DASHBOARD CARDS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-2 h-full bg-emerald-500"></div>
+                <div class="flex justify-between items-start gap-2">
+                    <div class="min-w-0">
+                        <p class="text-[10px] sm:text-xs uppercase text-slate-400 font-bold tracking-wider truncate">Total Pemasukan</p>
+                        <p id="total-pemasukan" class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-emerald-600 mt-2 truncate">Rp 0</p>
+                    </div>
+                    <div class="p-2 bg-emerald-50 rounded-lg text-emerald-500 text-sm sm:text-base shrink-0">📈</div>
+                </div>
             </div>
-            <div class="card">
-                <h3>Total Pengeluaran</h3>
-                <span>📉</span>
-                <p id="total-expense">Rp 0</p>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+                <div class="absolute top-0 left-0 w-2 h-full bg-rose-500"></div>
+                <div class="flex justify-between items-start gap-2">
+                    <div class="min-w-0">
+                        <p class="text-[10px] sm:text-xs uppercase text-slate-400 font-bold tracking-wider truncate">Total Pengeluaran</p>
+                        <p id="total-pengeluaran" class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-rose-600 mt-2 truncate">Rp 0</p>
+                    </div>
+                    <div class="p-2 bg-rose-50 rounded-lg text-rose-500 text-sm sm:text-base shrink-0">📉</div>
+                </div>
             </div>
-            <div class="card">
-                <h3>Sisa Saldo</h3>
-                <span>⚖️</span>
-                <p id="balance">Rp 0</p>
+
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300 relative overflow-hidden group sm:col-span-2 lg:col-span-1">
+                <div class="absolute top-0 left-0 w-2 h-full bg-indigo-600" id="garis-saldo"></div>
+                <div class="flex justify-between items-start gap-2">
+                    <div class="min-w-0">
+                        <p class="text-[10px] sm:text-xs uppercase text-slate-400 font-bold tracking-wider truncate">Sisa Saldo</p>
+                        <p id="sisa-saldo" class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-indigo-600 mt-2 truncate">Rp 0</p>
+                    </div>
+                    <div class="p-2 bg-indigo-50 rounded-lg text-indigo-500 text-sm sm:text-base shrink-0" id="box-ikon-saldo">⚖️</div>
+                </div>
             </div>
         </div>
 
-        <!-- FORM TRANSAKSI -->
-        <div class="form-section">
-            <h3>✍️ Tambah Transaksi</h3>
-            <form id="transaction-form">
-                <input type="text" id="desc" placeholder="Deskripsi" required>
-                <input type="number" id="amount" placeholder="Jumlah (Rp)" required>
-                <select id="type">
-                    <option value="income">Pemasukan (Masuk)</option>
-                    <option value="expense">Pengeluaran (Keluar)</option>
-                </select>
-                <button type="submit">Simpan Transaksi</button>
-            </form>
-        </div>
+        <!-- FORM & RIWAYAT -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+            <!-- Form Transaksi -->
+            <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-4 w-full">
+                <h2 class="text-lg sm:text-xl font-bold mb-4 text-slate-800 flex items-center gap-2">
+                    <span>✍️</span> Tambah Transaksi
+                </h2>
+                <form id="form-transaksi" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Deskripsi</label>
+                        <input type="text" id="deskripsi" required placeholder="Sembako, Gaji, dll" class="mt-1.5 block w-full rounded-xl border-slate-200 shadow-sm p-2.5 border focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Jumlah (Rp)</label>
+                        <input type="text" id="jumlah" required placeholder="Contoh: 2000, 2.000" class="mt-1.5 block w-full rounded-xl border-slate-200 shadow-sm p-2.5 border focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Jenis</label>
+                        <select id="jenis" class="mt-1.5 block w-full rounded-xl border-slate-200 shadow-sm p-3 border focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm bg-white">
+                            <option value="pemasukan">Pemasukan (Masuk)</option>
+                            <option value="pengeluaran">Pengeluaran (Keluar)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white py-2.5 px-4 rounded-xl hover:from-indigo-700 hover:to-blue-700 font-semibold shadow-sm hover:shadow-md transition-all duration-150 mt-2 text-sm cursor-pointer">Simpan Transaksi</button>
+                </form>
+            </div>
 
-        <!-- RIWAYAT TRANSAKSI -->
-        <div class="history-section">
-            <h3>📋 Riwayat Transaksi</h3>
-            <div class="table-scroll-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Tanggal</th>
-                            <th>Deskripsi</th>
-                            <th>Jenis</th>
-                            <th>Jumlah</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="transaction-table">
-                        <tr>
-                            <td colspan="5" style="text-align:center;">📭 Belum ada catatan transaksi masuk/keluar.</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- Riwayat Transaksi -->
+            <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-8 w-full overflow-hidden">
+                <h2 class="text-lg sm:text-xl font-bold mb-4 text-slate-800 flex items-center gap-2">
+                    <span>📋</span> Riwayat Transaksi
+                </h2>
+                
+                <!-- Tabel (Desktop) -->
+                <div class="hidden md:block w-full overflow-x-auto rounded-xl border border-slate-100" style="max-height: 380px; overflow-y: auto;">
+                    <table class="w-full divide-y divide-slate-100 table-fixed">
+                        <thead class="bg-slate-50 sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th class="px-3 sm:px-4 py-3 text-center text-xs font-bold text-slate-400 uppercase tracking-wider w-[15%]">Tanggal</th>
+                                <th class="px-3 sm:px-4 py-3 text-center text-xs font-bold text-slate-400 uppercase tracking-wider w-[30%]">Deskripsi</th>
+                                <th class="px-3 sm:px-4 py-3 text-center text-xs font-bold text-slate-400 uppercase tracking-wider w-[15%]">Jenis</th>
+                                <th class="px-3 sm:px-4 py-3 text-right text-xs font-bold text-slate-400 uppercase tracking-wider w-[25%]">Jumlah</th>
+                                <th class="px-3 sm:px-4 py-3 text-center text-xs font-bold text-slate-400 uppercase tracking-wider w-[15%]">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-transaksi" class="bg-white divide-y divide-slate-100 text-sm">
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Card (Mobile) dengan Scroll -->
+                <div class="md:hidden w-full rounded-xl border border-slate-100" style="max-height: 380px; overflow-y: auto;">
+                    <div id="card-transaksi" class="space-y-3 p-4">
+                    </div>
+                </div>
+                
+                <div id="pesan-kosong" class="text-center py-10 text-slate-400 font-medium hidden">
+                    📭 Belum ada catatan transaksi masuk/keluar.
+                </div>
             </div>
         </div>
     </div>
@@ -105,7 +144,7 @@
         </div>
     </footer>
 
-    <!-- CHATBOT POP-UP -->
+    <!-- CHATBOT POPUP -->
     <div class="chat-toggle-btn" id="chat-toggle">💬 Chat SENA</div>
     <div class="chat-popup" id="chat-popup">
         <div class="chat-header">

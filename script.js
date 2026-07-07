@@ -7,14 +7,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let conversationHistory = JSON.parse(localStorage.getItem('sena_chat_history')) || [];
 
     // ================= DOM ELEMENTS =================
-    const totalIncomeEl = document.getElementById('total-income');
-    const totalExpenseEl = document.getElementById('total-expense');
-    const balanceEl = document.getElementById('balance');
-    const transactionForm = document.getElementById('transaction-form');
-    const descInput = document.getElementById('desc');
-    const amountInput = document.getElementById('amount');
-    const typeSelect = document.getElementById('type');
-    const tableBody = document.getElementById('transaction-table');
+    const totalPemasukanEl = document.getElementById('total-pemasukan');
+    const totalPengeluaranEl = document.getElementById('total-pengeluaran');
+    const sisaSaldoEl = document.getElementById('sisa-saldo');
+    const garisSaldoEl = document.getElementById('garis-saldo');
+    const boxIkonSaldoEl = document.getElementById('box-ikon-saldo');
+    const formTransaksi = document.getElementById('form-transaksi');
+    const inputDeskripsi = document.getElementById('deskripsi');
+    const inputJumlah = document.getElementById('jumlah');
+    const selectJenis = document.getElementById('jenis');
+    const tabelTransaksi = document.getElementById('tabel-transaksi');
+    const cardTransaksi = document.getElementById('card-transaksi');
+    const pesanKosong = document.getElementById('pesan-kosong');
 
     const chatToggle = document.getElementById('chat-toggle');
     const chatPopup = document.getElementById('chat-popup');
@@ -28,15 +32,16 @@ document.addEventListener('DOMContentLoaded', () => {
     renderChatHistory();
 
     // ================= EVENT LISTENERS =================
-    transactionForm.addEventListener('submit', (e) => {
+    formTransaksi.addEventListener('submit', (e) => {
         e.preventDefault();
-        const desc = descInput.value.trim();
-        const amount = parseFloat(amountInput.value);
-        const type = typeSelect.value;
+        const desc = inputDeskripsi.value.trim();
+        const amountStr = inputJumlah.value.trim();
+        const type = selectJenis.value === 'pemasukan' ? 'income' : 'expense';
+        const amount = parseIndonesianNumber(amountStr);
         
         if (desc && amount > 0) {
             addTransaction(desc, amount, type);
-            transactionForm.reset();
+            formTransaksi.reset();
         }
     });
 
@@ -51,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
         appendMessage('user', message);
         userInput.value = '';
 
-        // 1. Deteksi dan proses multiple transactions
         const multipleTransactions = parseMultipleTransactions(message);
         
         if (multipleTransactions.length > 0) {
@@ -59,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 addTransaction(t.desc, t.amount, t.type);
             });
             
-            // Tampilkan ringkasan jika ada lebih dari 1 transaksi
             if (multipleTransactions.length > 1) {
                 setTimeout(() => {
                     const summary = multipleTransactions.map((t, i) => {
@@ -72,7 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2. Kirim ke Backend (Gemini API)
         conversationHistory.push({ role: 'user', text: message });
         saveChatHistory();
 
@@ -147,34 +149,80 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalIncome = 0;
         let totalExpense = 0;
 
-        if (transactions.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">📭 Belum ada catatan transaksi masuk/keluar.</td></tr>`;
-        } else {
-            tableBody.innerHTML = transactions.map((t, index) => {
-                if (t.type === 'income') totalIncome += t.amount;
-                else totalExpense += t.amount;
-
-                const typeLabel = t.type === 'income' ? '<span style="color:green;">📈 Masuk</span>' : '<span style="color:red;">📉 Keluar</span>';
-                const amountLabel = t.type === 'income' ? `+ Rp ${t.amount.toLocaleString('id-ID')}` : `- Rp ${t.amount.toLocaleString('id-ID')}`;
-                const color = t.type === 'income' ? 'green' : 'red';
-
-                return `
-                    <tr>
-                        <td>${t.date}</td>
-                        <td>${t.desc}</td>
-                        <td>${typeLabel}</td>
-                        <td style="color:${color}; font-weight:bold;">${amountLabel}</td>
-                        <td><button onclick="window.deleteItem(${index})" style="background:#dc3545; padding:5px 10px; font-size:12px; border-radius:4px; color:white; border:none; cursor:pointer;">Hapus</button></td>
-                    </tr>
-                `;
-            }).join('');
-        }
+        transactions.forEach(t => {
+            if (t.type === 'income') totalIncome += t.amount;
+            else totalExpense += t.amount;
+        });
 
         const balance = totalIncome - totalExpense;
-        totalIncomeEl.textContent = `Rp ${totalIncome.toLocaleString('id-ID')}`;
-        totalExpenseEl.textContent = `Rp ${totalExpense.toLocaleString('id-ID')}`;
-        balanceEl.textContent = `Rp ${balance.toLocaleString('id-ID')}`;
-        balanceEl.style.color = balance < 0 ? '#dc3545' : '#28a745';
+
+        totalPemasukanEl.textContent = `Rp ${totalIncome.toLocaleString('id-ID')}`;
+        totalPengeluaranEl.textContent = `Rp ${totalExpense.toLocaleString('id-ID')}`;
+        sisaSaldoEl.textContent = `Rp ${balance.toLocaleString('id-ID')}`;
+
+        if (balance < 0) {
+            garisSaldoEl.classList.remove('bg-indigo-600');
+            garisSaldoEl.classList.add('bg-rose-600');
+            sisaSaldoEl.classList.remove('text-indigo-600');
+            sisaSaldoEl.classList.add('text-rose-600');
+            boxIkonSaldoEl.textContent = '⚠️';
+        } else {
+            garisSaldoEl.classList.remove('bg-rose-600');
+            garisSaldoEl.classList.add('bg-indigo-600');
+            sisaSaldoEl.classList.remove('text-rose-600');
+            sisaSaldoEl.classList.add('text-indigo-600');
+            boxIkonSaldoEl.textContent = '⚖️';
+        }
+
+        if (transactions.length === 0) {
+            tabelTransaksi.innerHTML = '';
+            cardTransaksi.innerHTML = '';
+            pesanKosong.classList.remove('hidden');
+            return;
+        }
+
+        pesanKosong.classList.add('hidden');
+
+        // Render Tabel (Desktop)
+        tabelTransaksi.innerHTML = transactions.map((t, index) => {
+            const typeLabel = t.type === 'income' ? '<span class="text-emerald-600 font-semibold">Masuk</span>' : '<span class="text-rose-600 font-semibold">Keluar</span>';
+            const amountLabel = t.type === 'income' ? `<span class="text-emerald-600 font-bold">+ Rp ${t.amount.toLocaleString('id-ID')}</span>` : `<span class="text-rose-600 font-bold">- Rp ${t.amount.toLocaleString('id-ID')}</span>`;
+            
+            return `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-3 sm:px-4 py-3 text-slate-600">${t.date}</td>
+                    <td class="px-3 sm:px-4 py-3 text-slate-800 font-medium">${t.desc}</td>
+                    <td class="px-3 sm:px-4 py-3 text-center">${typeLabel}</td>
+                    <td class="px-3 sm:px-4 py-3 text-right">${amountLabel}</td>
+                    <td class="px-3 sm:px-4 py-3 text-center">
+                        <button onclick="window.deleteItem(${index})" class="bg-rose-500 hover:bg-rose-600 text-white px-3 py-1 rounded-lg text-xs font-semibold transition-colors">Hapus</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Render Card (Mobile)
+        cardTransaksi.innerHTML = transactions.map((t, index) => {
+            const typeLabel = t.type === 'income' ? 'Pemasukan' : 'Pengeluaran';
+            const typeColor = t.type === 'income' ? 'text-emerald-600' : 'text-rose-600';
+            const amountLabel = t.type === 'income' ? `+ Rp ${t.amount.toLocaleString('id-ID')}` : `- Rp ${t.amount.toLocaleString('id-ID')}`;
+            
+            return `
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex-1 min-w-0 mr-3">
+                            <p class="text-xs text-slate-400 font-medium mb-0.5">${t.date}</p>
+                            <p class="text-sm font-bold text-slate-800 truncate">${t.desc}</p>
+                        </div>
+                        <p class="text-sm font-bold ${typeColor} whitespace-nowrap">${amountLabel}</p>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs px-2 py-1 rounded-md ${t.type === 'income' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'} font-semibold">${typeLabel}</span>
+                        <button onclick="window.deleteItem(${index})" class="text-rose-500 hover:text-rose-700 text-xs font-semibold px-2 py-1">Hapus</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     window.deleteItem = (index) => deleteTransaction(index);
@@ -208,45 +256,39 @@ document.addEventListener('DOMContentLoaded', () => {
         return msg;
     }
 
-    // ================= MULTI-TRANSACTION PARSING (FIXED) =================
-    
+    // ================= MULTI-TRANSACTION PARSING =================
     function parseMultipleTransactions(text) {
         const results = [];
         if (isFutureIntent(text)) return [];
 
-        // 1. Potong kalimat berdasarkan kata pemisah: dan, serta, lalu, koma, dll.
         const chunks = text.split(/\b(?:dan|serta|lalu|kemudian|plus|sama)\b|,|;/i)
                            .map(c => c.trim())
                            .filter(c => c.length > 0);
 
         if (chunks.length === 0) chunks.push(text);
 
-        // 2. Proses setiap bagian secara INDEPENDEN (Tidak digabung lagi!)
         chunks.forEach(chunk => {
             let parsed = parseTransactionIntent(chunk);
             
             if (parsed) {
                 results.push(parsed);
             } else {
-                // Fallback untuk fragmen tanpa kata kerja (contoh: "coklat 12.000")
                 const amount = parseIndonesianNumber(chunk);
                 if (amount && amount > 0) {
                     const isIncomeChunk = /\b(gaji|gajian|masuk|income|pemasukan|dapat|terima|bonus|jual|dividen|beasiswa|thr)\b/i.test(chunk);
-                    const type = isIncomeChunk ? 'income' : 'expense'; // Default ke expense
-                    
+                    const type = isIncomeChunk ? 'income' : 'expense';
                     const desc = extractCleanDescription(chunk, amount, type);
                     results.push({ desc, amount, type });
                 }
             }
         });
 
-        // Hapus duplikat
         return results.filter((t, index, self) => 
             index === self.findIndex((t2) => t2.desc === t.desc && t2.amount === t.amount && t2.type === t.type)
         );
     }
 
-    // ================= LOCAL PARSING HELPERS =================
+    // ================= PARSING HELPERS =================
     function isFutureIntent(text) {
         return /\b(mau|ingin|akan|nanti|berencana|berniat|pengen|bakal)\b/i.test(text.toLowerCase());
     }
@@ -328,7 +370,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function parseIndonesianNumber(text) {
-        // PERBAIKAN KRITIS: Tambahkan \b (word boundary) agar 'm' tidak terbaca dari 'membeli'/'makan'
         const multiplierMatch = text.match(/([\d.,]+)\s*\b(rb|ribu|jt|juta|m|mil|miliar|milgar)\b/i);
         if (multiplierMatch) {
             let num = parseNumericString(multiplierMatch[1]);
