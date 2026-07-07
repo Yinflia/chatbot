@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let transactions = JSON.parse(localStorage.getItem('sena_transactions')) || [];
     let conversationHistory = JSON.parse(localStorage.getItem('sena_chat_history')) || [];
 
-    // ================= DOM ELEMENTS =================
+    // ================= DOM ELEMENTS (Sesuai HTML Tailwind Terbaru) =================
     const totalPemasukanEl = document.getElementById('total-pemasukan');
     const totalPengeluaranEl = document.getElementById('total-pengeluaran');
     const sisaSaldoEl = document.getElementById('sisa-saldo');
@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appendMessage('user', message);
         userInput.value = '';
 
+        // ✅ PERBAIKAN: Parsing transaksi sekarang dilakukan PER CHUNK
         const multipleTransactions = parseMultipleTransactions(message);
         
         if (multipleTransactions.length > 0) {
@@ -72,9 +73,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     appendMessage('bot', `✅ Berhasil mencatat <b>${multipleTransactions.length} transaksi</b>!<br><br>${summary}<br><br>💡 <b>Rekomendasi:</b> Pantau terus riwayat di dashboard agar arus kas Anda terkontrol.`);
                 }, 500);
+            } else if (multipleTransactions.length === 1) {
+                // Konfirmasi untuk 1 transaksi
+                setTimeout(() => {
+                    const t = multipleTransactions[0];
+                    const typeLabel = t.type === 'income' ? 'Pemasukan' : 'Pengeluaran';
+                    appendMessage('bot', `✅ Siap! Saya sudah mencatat ${typeLabel} "<b>${t.desc}</b>" sebesar Rp ${t.amount.toLocaleString('id-ID')}.<br><br>💡 <b>Rekomendasi:</b> Pantau terus riwayat di dashboard agar arus kas Anda terkontrol.`);
+                }, 500);
             }
         }
 
+        // Kirim ke Backend (Tetap kirim pesan utuh agar AI bisa merespons konteks "ingin beli mobil")
         conversationHistory.push({ role: 'user', text: message });
         saveChatHistory();
 
@@ -88,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) throw new Error('Network response was not ok');
-
             const data = await response.json();
             const botReply = data.output;
 
@@ -102,11 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 conversationHistory = conversationHistory.slice(-20);
                 saveChatHistory();
             }
-
         } catch (error) {
-            console.error('Error communicating with backend:', error);
+            console.error('Error:', error);
             loadingMsg.remove();
-            appendMessage('bot', '⚠️ <b>Terjadi kesalahan koneksi.</b><br>Tidak dapat terhubung ke server SENA.<br><br>💡 <b>Rekomendasi:</b> Periksa koneksi internet Anda atau hubungi tim dukungan SENA.');
+            appendMessage('bot', '⚠️ <b>Terjadi kesalahan koneksi.</b><br>Tidak dapat terhubung ke server SENA.');
         }
     });
 
@@ -161,16 +168,12 @@ document.addEventListener('DOMContentLoaded', () => {
         sisaSaldoEl.textContent = `Rp ${balance.toLocaleString('id-ID')}`;
 
         if (balance < 0) {
-            garisSaldoEl.classList.remove('bg-indigo-600');
-            garisSaldoEl.classList.add('bg-rose-600');
-            sisaSaldoEl.classList.remove('text-indigo-600');
-            sisaSaldoEl.classList.add('text-rose-600');
+            garisSaldoEl.className = 'absolute top-0 left-0 w-2 h-full bg-rose-600';
+            sisaSaldoEl.className = 'text-xl sm:text-2xl lg:text-3xl font-extrabold text-rose-600 mt-2 truncate';
             boxIkonSaldoEl.textContent = '⚠️';
         } else {
-            garisSaldoEl.classList.remove('bg-rose-600');
-            garisSaldoEl.classList.add('bg-indigo-600');
-            sisaSaldoEl.classList.remove('text-rose-600');
-            sisaSaldoEl.classList.add('text-indigo-600');
+            garisSaldoEl.className = 'absolute top-0 left-0 w-2 h-full bg-indigo-600';
+            sisaSaldoEl.className = 'text-xl sm:text-2xl lg:text-3xl font-extrabold text-indigo-600 mt-2 truncate';
             boxIkonSaldoEl.textContent = '⚖️';
         }
 
@@ -256,23 +259,38 @@ document.addEventListener('DOMContentLoaded', () => {
         return msg;
     }
 
-    // ================= MULTI-TRANSACTION PARSING =================
+    // ================= PARSING LOGIC (FIXED FOR MIXED INTENTS) =================
+    
+    function isFutureIntent(text) {
+        const lowerText = text.toLowerCase();
+        const futureKeywords = ['ingin', 'mau', 'akan', 'nanti', 'berencana', 'berniat', 'pengen', 'bakal', 'berharap', 'bermaksud'];
+        return futureKeywords.some(keyword => lowerText.includes(keyword));
+    }
+
     function parseMultipleTransactions(text) {
         const results = [];
-        if (isFutureIntent(text)) return [];
-
+        
+        // 1. Potong kalimat berdasarkan kata pemisah
         const chunks = text.split(/\b(?:dan|serta|lalu|kemudian|plus|sama)\b|,|;/i)
                            .map(c => c.trim())
                            .filter(c => c.length > 0);
 
         if (chunks.length === 0) chunks.push(text);
 
+        // 2. Evaluasi SETIAP CHUNK secara terpisah
         chunks.forEach(chunk => {
+            // ✅ PERBAIKAN: Cek future intent PER CHUNK, bukan per kalimat utuh
+            if (isFutureIntent(chunk)) {
+                console.log(`🚫 Skipping future intent chunk: "${chunk}"`);
+                return; // Lewati chunk ini, jangan catat
+            }
+
             let parsed = parseTransactionIntent(chunk);
             
             if (parsed) {
                 results.push(parsed);
             } else {
+                // Fallback untuk fragmen tanpa kata kerja
                 const amount = parseIndonesianNumber(chunk);
                 if (amount && amount > 0) {
                     const isIncomeChunk = /\b(gaji|gajian|masuk|income|pemasukan|dapat|terima|bonus|jual|dividen|beasiswa|thr)\b/i.test(chunk);
@@ -283,14 +301,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Hapus duplikat
         return results.filter((t, index, self) => 
             index === self.findIndex((t2) => t2.desc === t.desc && t2.amount === t.amount && t2.type === t.type)
         );
-    }
-
-    // ================= PARSING HELPERS =================
-    function isFutureIntent(text) {
-        return /\b(mau|ingin|akan|nanti|berencana|berniat|pengen|bakal)\b/i.test(text.toLowerCase());
     }
 
     function parseTransactionIntent(text) {
