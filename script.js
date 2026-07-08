@@ -45,7 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    chatToggle.addEventListener('click', () => chatPopup.classList.add('active'));
+    chatToggle.addEventListener('click', () => {
+        chatPopup.classList.toggle('active');
+
+        setTimeout(() => {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }, 100);
+    }); 
+
     closeChat.addEventListener('click', () => chatPopup.classList.remove('active'));
 
     chatForm.addEventListener('submit', async (e) => {
@@ -55,6 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         appendMessage('user', message);
         userInput.value = '';
+
+        if (isNonFinancialQuestion(message)) {
+            console.log('🚫 Detected non-financial question:', message);
+            setTimeout(() => {
+                appendMessage('bot', '⚠️ Maaf, SENA hanya mencatat transaksi keuangan dan membantu pengelolaan anggaran Anda. Saya tidak dapat menjawab pertanyaan di luar topik keuangan. Silakan masukkan transaksi Anda untuk dicatat, misalnya: <br>• "beli makan 25.000"<br>• "gajian 5 juta"<br>• "bayar listrik 300.000"<br><br>💡 <b>Rekomendasi:</b> Gunakan SENA untuk mencatat semua pemasukan dan pengeluaran agar arus kas Anda terkontrol.');
+            }, 300);
+            return;
+        }
 
         // ✅ PERBAIKAN: Parsing transaksi sekarang dilakukan PER CHUNK
         const multipleTransactions = parseMultipleTransactions(message);
@@ -129,8 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addTransaction(desc, amount, type) {
-        const lastTrans = transactions[0];
-        if (lastTrans && lastTrans.desc === desc && lastTrans.amount === amount && lastTrans.type === type) return;
+        // const lastTrans = transactions[0];
+        // if (lastTrans && lastTrans.desc === desc && lastTrans.amount === amount && lastTrans.type === type) return;
 
         const newTransaction = {
             date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -264,7 +279,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function isFutureIntent(text) {
         const lowerText = text.toLowerCase();
         const futureKeywords = ['ingin', 'mau', 'akan', 'nanti', 'berencana', 'berniat', 'pengen', 'bakal', 'berharap', 'bermaksud'];
-        return futureKeywords.some(keyword => lowerText.includes(keyword));
+        return futureKeywords.some(keyword => {
+            const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+            return regex.test(lowerText);
+        });
     }
 
     function parseMultipleTransactions(text) {
@@ -312,9 +330,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!amount || amount <= 0) return null;
 
         const lowerText = text.toLowerCase();
-        const incomeKeywords = /\b(gajian|gaji|gajihan|masuk|income|pemasukan|dapat|terima|bonus|jual|dividen|dikasih|diberi|beasiswa|thr)\b/i;
-        const expenseKeywords = /\b(belanja|makan|beli|bayar|keluar|expense|pengeluaran|jajan|minum|habis|tarik|transfer|kasih|pinjam|atca|ngetca|beliatca|belu)\b/i;
-        
+        const incomeKeywords = /\b(gajian|gaji|gajihan|masuk|income|pemasukan|dapat|terima|bonus|jual|dividen|dikasih|diberi|beasiswa|thr)\b/i;        
+        const expenseKeywords = /\b(belanja|makan|makanan|beli|bayar|keluar|expense|pengeluaran|jajan|minum|minuman|habis|tarik|transfer|kasih|pinjam|nonton|menonton|film|bioskop)\b/i;
+                
         let type = null;
         if (incomeKeywords.test(lowerText)) type = 'income';
         else if (expenseKeywords.test(lowerText)) type = 'expense';
@@ -327,20 +345,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const lowerText = text.toLowerCase();
         const keywordMap = {
             'income': [
-                { words: ['gaji', 'gajian', 'gajihan', 'thr'], desc: 'Gaji' },
+                { words: ['gaji', 'gajian', 'gajihan'], desc: 'Gaji' },
                 { words: ['beasiswa'], desc: 'Beasiswa' },
-                { words: ['bonus'], desc: 'Bonus' },
+                { words: ['bonus', 'thr'], desc: 'Bonus' },
                 { words: ['jual', 'jualan'], desc: 'Penjualan' },
-                { words: ['investasi', 'saham', 'dividen'], desc: 'Investasi' }
+                { words: ['investasi', 'saham', 'dividen'], desc: 'Investasi' },
+                { words: ['hadiah', 'dikasih', 'diberi'], desc: 'Hadiah' },
+                { words: ['transfer', 'tf', 'setor', 'menerima'], desc: 'Transfer Masuk' },
+                { words: ['pinjaman', 'meminjam'], desc: 'Pinjaman' },
+                { words: ['tarik', 'menarik', 'ambil', 'mengambil'], desc: 'Penarikan' }
             ],
             'expense': [
-                { words: ['makan', 'minum', 'kopi', 'teh', 'jajan', 'snack', 'matcha', 'boba', 'coklat', 'cokelat'], desc: 'Makan & Minum' },
-                { words: ['belanja', 'atca', 'ngetca', 'beliatca', 'belu', 'supermarket', 'minimarket', 'swalayan'], desc: 'Belanja' },
-                { words: ['bensin', 'motor', 'mobil', 'parkir', 'tol', 'gojek', 'grab'], desc: 'Transportasi' },
+                { words: ['makan', 'makanan','jajan', 'snack', 'coklat', 'cokelat'], desc: 'Makan' },
+                { words: ['minum', 'minuman', 'kopi', 'teh', 'matcha', 'boba'], desc: 'Minum' },
+                { words: ['belanja', 'belu', 'supermarket', 'minimarket', 'swalayan'], desc: 'Belanja' },
+                { words: ['bensin', 'motor', 'mobil', 'parkir', 'tol', 'gojek', 'grab', 'ojek', 'transportasi', 'transport'], desc: 'Transportasi' },
                 { words: ['listrik', 'air', 'internet', 'pulsa', 'tagihan', 'bayar'], desc: 'Tagihan' },
                 { words: ['sewa', 'kontrakan', 'kos', 'kost'], desc: 'Sewa & Hunian' },
                 { words: ['obat', 'dokter', 'klinik', 'rs', 'rumah sakit'], desc: 'Kesehatan' },
-                { words: ['beli', 'baju', 'sepatu', 'barang', 'laptop', 'hp'], desc: 'Pembelian' }
+                { words: ['beli', 'baju', 'sepatu', 'barang', 'laptop', 'hp'], desc: 'Pembelian' },
+                { words: ['hiburan', 'nonton', 'bioskop', 'game', 'netflix', 'spotify'], desc: 'Hiburan' },
+                { words: ['liburan', 'travel', 'jalan-jalan', 'hotel', 'tiket'], desc: 'Liburan & Travel' },
+                { words: ['pinjaman', 'hutang', 'kredit', 'angsuran'], desc: 'Pinjaman & Hutang' },
+                { words: ['donasi', 'sedekah', 'amal', 'wakaf'], desc: 'Donasi & Amal' },
+                { words: ['hadiah', 'kado', 'ultah', 'ulang tahun'], desc: 'Hadiah & Kado' },
+                { words: ['deposit', 'dp', 'uang muka', 'deposito', 'reksa dana'], desc: 'Deposit & Uang Muka' }
             ]
         };
 
@@ -402,3 +431,48 @@ document.addEventListener('DOMContentLoaded', () => {
         return isNaN(val) ? null : Math.round(val);
     }
 });
+
+
+function isNonFinancialQuestion(text) {
+    const lowerText = text.toLowerCase();
+    
+    // Deteksi pertanyaan matematika
+    const mathPatterns = [
+        /\b(berapa|hitung|kalkulasi|jumlah|tambah|kurang|kali|bagi|result|calculate)\b/i,
+        /\d+\s*[+\-×÷*/]\s*\d+/, 
+        /\b(plus|minus|times|divided)\b/i
+    ];
+    
+    // Deteksi prompt injection
+    const injectionPatterns = [
+        /\b(ignore|abaikan|forget|lupakan|skip|lewati)\b.*\b(instruction|perintah|rule|aturan)\b/i,
+        /\b(hack|crack|bobol|bypass)\b/i,
+        /\b(jangan|don't)\b.*\b(ikuti|follow)\b.*\b(rule|aturan)\b/i,
+        /\b(kamu|you)\b.*\b(adalah|are)\b.*\b(bukan|not)\b.*\b(sena|financial)\b/i
+    ];
+    
+    // Deteksi pertanyaan non-keuangan umum
+    const nonFinancialPatterns = [
+        /\b(siapa|who)\b.*\b(presiden|president|raja|king|artis|artist)\b/i,
+        /\b(apa|what|)\b.*\b(ibukota|capital|nama negara|country name)\b/i,
+        /\b(mengapa|why)\b.*\b(langit|sky|hujan|rain|matahari|sun)\b/i,
+        /\b(ceritakan|tell)\b.*\b(cerita|story|lelucon|joke)\b/i,
+        /\b(buatkan|make|create)\b.*\b(gambar|image|foto|photo|lagu|song)\b/i,
+        /\b(apakah|what)\b.*\b(agama|religion|politik|politics|olahraga|sports)\b/i,
+        /\b(berita|news)\b/i,
+        /\b(teknologi|technology|sains|science|sejarah|history)\b/i
+    ];
+    
+    // Cek semua pattern
+    for (const pattern of mathPatterns) {
+        if (pattern.test(lowerText)) return true;
+    }
+    for (const pattern of injectionPatterns) {
+        if (pattern.test(lowerText)) return true;
+    }
+    for (const pattern of nonFinancialPatterns) {
+        if (pattern.test(lowerText)) return true;
+    }
+    
+    return false;
+}
