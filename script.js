@@ -436,14 +436,18 @@ document.addEventListener('DOMContentLoaded', () => {
 function isNonFinancialQuestion(text) {
     const lowerText = text.toLowerCase();
     
-    // Deteksi pertanyaan matematika
+    const financialQuestions = [
+        /\b(berapa|hitung)\b.*\b(saldo|balance|pemasukan|pengeluaran|hutang|piutang|tabungan|investasi|budget|anggaran)\b/i,
+        /\b(saldo|balance|pemasukan|pengeluaran)\b.*\b(saya|saya saat ini|saat ini|sekarang|total)\b/i,
+        /\b(berapa|berapa banyak)\b.*\b(rupiah|uang|dana|biaya)\b/i
+    ];
+
     const mathPatterns = [
         /\b(berapa|hitung|kalkulasi|jumlah|tambah|kurang|kali|bagi|result|calculate)\b/i,
         /\d+\s*[+\-×÷*/]\s*\d+/, 
         /\b(plus|minus|times|divided)\b/i
     ];
     
-    // Deteksi prompt injection
     const injectionPatterns = [
         /\b(ignore|abaikan|forget|lupakan|skip|lewati)\b.*\b(instruction|perintah|rule|aturan)\b/i,
         /\b(hack|crack|bobol|bypass)\b/i,
@@ -451,7 +455,6 @@ function isNonFinancialQuestion(text) {
         /\b(kamu|you)\b.*\b(adalah|are)\b.*\b(bukan|not)\b.*\b(sena|financial)\b/i
     ];
     
-    // Deteksi pertanyaan non-keuangan umum
     const nonFinancialPatterns = [
         /\b(siapa|who)\b.*\b(presiden|president|raja|king|artis|artist)\b/i,
         /\b(apa|what|)\b.*\b(ibukota|capital|nama negara|country name)\b/i,
@@ -463,7 +466,13 @@ function isNonFinancialQuestion(text) {
         /\b(teknologi|technology|sains|science|sejarah|history)\b/i
     ];
     
-    // Cek semua pattern
+    for (const pattern of financialQuestions) {
+        if (pattern.test(lowerText)) {
+            console.log('✅ Detected financial question:', text);
+            return false;
+        }
+    }
+
     for (const pattern of mathPatterns) {
         if (pattern.test(lowerText)) return true;
     }
